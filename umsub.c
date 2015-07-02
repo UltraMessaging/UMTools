@@ -350,7 +350,7 @@ void print_bw(FILE *fp, struct timeval *tv, unsigned int msgs, unsigned int byte
 }
 
 /* Callback function used for printing metrics to stdout and dumping to file if configured */
-int print_metrics(lbm_context_t *ctx, const void *clientd)
+void print_metrics(lbm_context_t *ctx, const void *clientd)
 {
         struct Options *opts = &options;
         printf("Messages Received: Live[%d] RX[%d] OTR[%d]", lstream - pre_lstream, rxs - pre_rxs, otrs - pre_otrs);
@@ -1592,9 +1592,9 @@ int main(int argc, char **argv)
 		unlink(opts->end_flg_file);
 
 	/* Set metrics printing callback */
-	if (opts->print_metrics || opts->output_file)
+	if (opts->print_metrics > 0)
 	{
-		if (lbm_schedule_timer_recurring(ctxs[0], print_metrics, NULL, NULL, opts->print_metrics) == -1)
+		if (lbm_schedule_timer_recurring(ctxs[0], (lbm_timer_cb_proc)print_metrics, NULL, NULL, opts->print_metrics) == -1)
 		{
 			fprintf(stderr, "Error scheduling timer callback\n");
        	        	exit(1);
