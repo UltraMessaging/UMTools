@@ -196,6 +196,7 @@ struct Options {
 	int eventq;
 	int threads;
 	int wildcard;
+	int dump_to_file;
 	char *output_file;
 	FILE *ofp;
 	int print_metrics;
@@ -353,13 +354,20 @@ void print_bw(FILE *fp, struct timeval *tv, unsigned int msgs, unsigned int byte
 void print_metrics(lbm_context_t *ctx, const void *clientd)
 {
         struct Options *opts = &options;
+
         printf("Messages Received: Live[%d] RX[%d] OTR[%d]", lstream - pre_lstream, rxs - pre_rxs, otrs - pre_otrs);
 	if (opts->measure_latency > 0)
 	{
 		double ow_avg = ow_total / owts;
-		printf(" Latency Min[%.04g] Max[%.04g] Avg[%.04g]", ow_min, ow_max, ow_avg);
+		printf(" Latency Min[%.06f] Max[%.06f] Avg[%.06f]", ow_min, ow_max, ow_avg);
 	}
 	printf("\n");
+
+	if (opts->dump_to_file)
+	{
+		fprintf(opts->ofp, "%d,%d,%d,%.04f,%.04f,%.04f\n", lstream - pre_lstream, rxs - pre_rxs, otrs - pre_otrs, ow_min, ow_max, ow_avg);
+		fflush(opts->ofp);
+	}
 }
 
 /* Utility to print the contents of a buffer in hex/ASCII format */
@@ -938,7 +946,6 @@ void process_cmdline(int argc, char **argv) {
 	opts->num_rcvs = DEFAULT_NUM_RCVS;
 	strncpy(opts->topicroot, DEFAULT_TOPIC_ROOT, sizeof(opts->topicroot));
 	opts->transport = lbmmon_transport_lbm_module();
-	opts->output_file = malloc(MAX_OUTPUT_FILE_NAME_SIZE);
 
 	while ((c = getopt_long(argc, argv, OptionString, OptionTable, NULL)) != EOF)
 	{
@@ -982,7 +989,16 @@ void process_cmdline(int argc, char **argv) {
 				opts->linger = atoi(optarg);
 				break;		
 			case 'o':
-				strncpy(opts->output_file, optarg, sizeof(MAX_OUTPUT_FILE_NAME_SIZE));
+				opts->dump_to_file++;
+				//opts->output_file = malloc(MAX_OUTPUT_FILE_NAME_SIZE);
+				//strncpy(opts->output_file, optarg, sizeof(MAX_OUTPUT_FILE_NAME_SIZE));
+				opts->output_file = optarg;
+				if ( (opts->ofp = fopen(opts->output_file, "w")) == NULL)
+				{
+					fprintf(stderr, "Error opening output file");
+					exit(1);
+				}
+				fprintf(opts->ofp, "Messages,RX,OTR,Latency Min,Latency Max,Latency Avg\n");
 				break;
 			case 'h':
 				fprintf(stderr, "%s\n", Purpose);
