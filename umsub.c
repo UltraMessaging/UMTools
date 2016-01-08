@@ -351,7 +351,7 @@ void print_bw(FILE *fp, struct timeval *tv, unsigned int msgs, unsigned int byte
 }
 
 /* Callback function used for printing metrics to stdout and dumping to file if configured */
-void print_metrics(lbm_context_t *ctx, const void *clientd)
+int print_metrics(lbm_context_t *ctx, const void *clientd)
 {
         struct Options *opts = &options;
 
@@ -634,10 +634,10 @@ int rcv_handle_msg(lbm_rcv_t *rcv, lbm_msg_t *msg, void *clientd)
             		lstream++;
 		break;
 	case LBM_MSG_BOS:
-			printf("[%s][%s], Beginning of Transport Session\n", msg->topic_name, msg->source);
+		printf("[%s][%s], Beginning of Transport Session\n", msg->topic_name, msg->source);
 		break;
 	case LBM_MSG_EOS:
-			printf("[%s][%s], End of Transport Session\n", msg->topic_name, msg->source);
+		printf("[%s][%s], End of Transport Session\n", msg->topic_name, msg->source);
 		if (opts->end_on_end)
 			close_recv = 1;
 		break;
@@ -1610,7 +1610,7 @@ int main(int argc, char **argv)
 	/* Set metrics printing callback */
 	if (opts->print_metrics > 0)
 	{
-		if (lbm_schedule_timer_recurring(ctxs[0], (lbm_timer_cb_proc)print_metrics, NULL, NULL, opts->print_metrics) == -1)
+		if (lbm_schedule_timer_recurring(ctxs[0], print_metrics, NULL, NULL, opts->print_metrics) == -1)
 		{
 			fprintf(stderr, "Error scheduling timer callback\n");
        	        	exit(1);

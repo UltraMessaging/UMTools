@@ -153,6 +153,9 @@ int rtts = 0;
 int rtt_min_idx = -1;
 int rtt_max_idx = -1;
 int msg_count = 0;
+int stats_use_ump = 0;
+int stats_use_umq = 0;
+int stats_rtt = 0;
 
 const char Purpose[] = "Purpose: Send rate-controlled messages on multiple topics.";
 const char Usage[] =
@@ -450,18 +453,19 @@ double calc_stddev(double mean) {
 
 void print_rtt_data(FILE *file)
 {
-/* If data was collected during the run, dump all the data and the idx of the min and max */
-if (rtt_data)
-{
-	int r;
+	/* If data was collected during the run, dump all the data and the idx of the min and max */
+	if (rtt_data)
+	{
+		int r;
 
-	for (r = 0; r < options.totalmsgsleft; r++)
-		fprintf(file, "RTT %.04g msec, msg %d\n", rtt_data[r] * 1000.0, r);
+		for (r = 0; r < options.totalmsgsleft; r++)
+			fprintf(file, "RTT %.04g msec, msg %d\n", rtt_data[r] * 1000.0, r);
 
 		/* Calculate median and stddev */
 		rtt_median = calc_med() * 1000.0;
 		rtt_stddev = calc_stddev(rtt_avg) * 1000.0;
 		print_rtt_results(file);
+		fflush(file);
 	}
 }
 
@@ -472,13 +476,15 @@ int rcv_handle_msg(lbm_rcv_t *rcv, lbm_msg_t *msg, void *clientd)
 	case LBM_MSG_DATA:
 		//should be if RTT
 		if (options.rtt) {
+			stats_rtt = 1;
+
 			current_tv(&msgendtv);
 			memcpy(&msgstarttv, msg->data, sizeof(msgstarttv));
 
 			print_rtt(stdout, &msgstarttv, &msgendtv);
 			msg_count++;
+			rtt_avg = (rtt_total / (double)rtts);
 			if (msg_count == options.totalmsgsleft) {
-				rtt_avg = (rtt_total / (double)rtts);
 
 				/* Send data to stderr so it can be redirected separately */
 				print_rtt_data(stderr);
@@ -491,7 +497,7 @@ int rcv_handle_msg(lbm_rcv_t *rcv, lbm_msg_t *msg, void *clientd)
 		}
 		break;
 	case LBM_MSG_BOS:
-			printf("[%s][%s], Beginning of Transport Session\n", msg->topic_name, msg->source);
+		printf("[%s][%s], Beginning of Transport Session\n", msg->topic_name, msg->source);
 		break;
 	case LBM_MSG_EOS:
 		printf("[%s][%s], End of Transport Session\n", msg->topic_name, msg->source);
@@ -642,15 +648,22 @@ int print_perf_stats(lbm_context_t **ctx_array)
 			min_flight = src_flight_size[i];
 	}
 				
-	printf("Msgs/Second[%6d] Msgs Stable[%6d] Flight Size Min/Avg/Max[%4d/%4d/%4d]\n", temp_Average_Message, msgs_stabilized, min_flight,
-		(total_flight / options.num_srcs), max_flight);
+	printf("Msgs/Second[%6d]", temp_Average_Message); 
+	
+	if (stats_rtt)
+		printf(" Latency Min/Avg/Max[%.06f/%.06f/%.06f]", rtt_min, rtt_avg, rtt_max);
+
+	if (stats_use_ump)
+		printf(" Msgs Stable[%6d] Flight Size Min/Avg/Max[%4d/%4d/%4d]", msgs_stabilized, min_flight, (total_flight / options.num_srcs), max_flight);
 
 	if (force_reclaim_total > 0)
 		printf(" Forced Reclaims[%d]", force_reclaim_total);
 	if (temp_eouldblok_sec > 0)
 		printf(" NAKs[%d]", temp_eouldblok_sec);
 	if (naks_Received > 0)
-		printf("EWOULDBLOCKS / Second[%d]", naks_Received);
+		printf(" EWOULDBLOCKS / Second[%d]", naks_Received);
+
+	printf("\n");
 }
 
 void print_final_test_results()
@@ -1030,6 +1043,7 @@ void *sending_thread_main(void *arg)
 	i = thrdidx;
 	/* printf("msgs = %u\n", msgsleft[thrdidx]); */
 	while (msgsleft[thrdidx] > 0 || msgsleft[thrdidx] == MAX_MESSAGES_INFINITE) {
+		for (i = 0; i < options.num_srcs; i++) {
 
 		/* Use some (potentially idle time) to get stats */
 		/* And hopefully not impact performance (much)*/
@@ -1146,6 +1160,7 @@ void *sending_thread_main(void *arg)
 	
 		if (done)
 			break;
+		} /* for */
 		}  /* while */
 
 	return 0;
@@ -1421,7 +1436,7 @@ int main(int argc, char **argv)
 	if (opts->rtt) {
 		/* Allocate buffer to store RTT data */
 		rtt_data = (double *)malloc(opts->totalmsgsleft * sizeof(rtt_data[0]));
-		printf("Latency Test. Sending %d total messages", opts->totalmsgsleft);
+		printf("Latency Test. Sending %d total messages\n", opts->totalmsgsleft);
 		/* Allocate Receiver objects */
 		/* Allocate receiver array */
 		if ((rcvs = malloc(sizeof(lbm_rcv_t *)* opts->num_srcs)) == NULL) {
@@ -1517,6 +1532,15 @@ int main(int argc, char **argv)
 				exit(1);
 			}
 		}
+	}
+
+	/* Put RTT receivers on there own context */
+	if (opts->rtt)
+	{
+		if (lbm_context_create(&ctx[num_ctx], cattr, NULL, NULL) == LBM_FAILURE) {
+                        fprintf(stderr, "lbm_context_create: %s\n", lbm_errmsg());
+                        exit(1);
+                }
 	}
 
 	if (opts->latejoin_threshold > 0)
@@ -1629,12 +1653,12 @@ int main(int argc, char **argv)
 			}
 			sprintf(rtopicname, "%s.rtt", topicname);
 	
-			if (lbm_rcv_topic_lookup(&rtopic, ctx[i%opts->num_ctx], rtopicname, rcv_attr) == LBM_FAILURE) {
+			if (lbm_rcv_topic_lookup(&rtopic, ctx[num_ctx], rtopicname, rcv_attr) == LBM_FAILURE) {
 				fprintf(stderr, "lbm_rcv_topic_lookup: %s\n", lbm_errmsg());
 				exit(1);
 			}
 	
-			if (lbm_rcv_create(&(rcvs[i]), ctx[i%opts->num_ctx], rtopic, rcv_handle_msg, NULL, opts->eventq ? evq : NULL) == LBM_FAILURE) {
+			if (lbm_rcv_create(&(rcvs[i]), ctx[num_ctx], rtopic, rcv_handle_msg, NULL, opts->eventq ? evq : NULL) == LBM_FAILURE) {
 				fprintf(stderr, "lbm_rcv_create: %s\n", lbm_errmsg());
 				exit(1);
 			}
