@@ -93,6 +93,7 @@ const char Usage[] =
 "  -r, --root=STRING          use topic names with root of STRING\n"
 "  -R, --receivers=NUM        create NUM receivers\n"
 "  -s, --statistics           print statistics along with bandwidth\n"
+"  -S, --reset                Resets the latency stats every print interval\n"
 "  -t, --measure-latency      Calculate latency based on message payload timestamp. Use twice for round trip latency\n"
 "  -T, --eq-threads           Use N threads for event queue processing\n"
 "  -v, --verbose              be verbose\n"
@@ -101,7 +102,7 @@ const char Usage[] =
 MONOPTS_RECEIVER
 MONMODULEOPTS_SENDER;
 
-const char * OptionString = "AB:c:C:Ee:Fhi:N:o:L:p:Qr:R:stT:vw";
+const char * OptionString = "AB:c:C:Ee:Fhi:N:o:L:p:Qr:R:sStT:vw";
 #define OPTION_MONITOR_RCV 0
 #define OPTION_MONITOR_CTX 1
 #define OPTION_MONITOR_TRANSPORT 2
@@ -136,6 +137,7 @@ const struct option OptionTable[] =
 	{ "root", required_argument, NULL, 'r' },
 	{ "receivers", required_argument, NULL, 'R' },
 	{ "statistics", no_argument, NULL, 's' },
+	{ "reset", no_argument, NULL, 'S' },
 	{ "measure-latency", no_argument, NULL, 't' },
 	{ "eq-threads", required_argument, NULL, 'T' },
 	{ "verbose", no_argument, NULL, 'v' },
@@ -201,6 +203,7 @@ struct Options {
 	FILE *ofp;
 	int print_metrics;
 	int measure_latency;
+	int reset;
 } options;
 
 lbm_event_queue_t *evq = NULL;
@@ -359,7 +362,7 @@ int print_metrics(lbm_context_t *ctx, const void *clientd)
 	if (opts->measure_latency > 0)
 	{
 		double ow_avg = ow_total / owts;
-		printf(" Latency Min[%.06f] Max[%.06f] Avg[%.06f]", ow_min, ow_max, ow_avg);
+		printf(" Latency seconds: Min[%.06f] Max[%.06f] Avg[%.06f]", ow_min, ow_max, ow_avg);
 	}
 	printf("\n");
 
@@ -367,6 +370,15 @@ int print_metrics(lbm_context_t *ctx, const void *clientd)
 	{
 		fprintf(opts->ofp, "%d,%d,%d,%.04f,%.04f,%.04f\n", lstream - pre_lstream, rxs - pre_rxs, otrs - pre_otrs, ow_min, ow_max, ow_avg);
 		fflush(opts->ofp);
+	}
+
+	if (opts->reset)
+	{
+		ow_total = 0.0; 
+		ow_min = 1000.0; 
+		ow_max = 0.0;
+		ow_avg = 0.0;
+		owts = 0;
 	}
 }
 
@@ -1027,6 +1039,9 @@ void process_cmdline(int argc, char **argv) {
 				break;
 			case 's':
 				opts->pstats++;
+				break;
+			case 'S':
+				opts->reset++;
 				break;
 			case 't':
 				opts->measure_latency++;

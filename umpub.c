@@ -105,7 +105,7 @@ else{\
 #define DEFAULT_MAX_MESSAGES 10000000
 #define DEFAULT_RTT_MESSAGES 1000000
 #define MAX_NUM_SRCS 100000
-#define MAX_NUM_CTX 16
+#define MAX_NUM_CTX 101
 #define DEFAULT_NUM_SRCS 100
 #define DEFAULT_NUM_CTXS 1
 #define DEFAULT_NUM_THREADS 1
@@ -173,7 +173,7 @@ const char Usage[] =
 "  -H, --hf                  Use hot failover sources\n"
 "  -i, --initial-topic=NUM   use NUM as initial topic number [0]\n"
 "  -I, --ignore=NUM          send and ignore msgs messages to warm up\n"
-"  -K, --measure-latency     Calculate latency based on message payload timestamp. Use twice for round trip latency"
+"  -K, --measure-latency     Calculate latency based on message payload timestamp. Use twice for round trip latency\n"
 "  -j, --late-join=NUM       enable Late Join with specified retention buffer size (in bytes)\n"
 "  -l, --length=NUM          send messages of length NUM bytes [25]\n"
 "  -L, --linger=NUM          linger for NUM seconds after done [10]\n"
@@ -659,9 +659,9 @@ int print_perf_stats(lbm_context_t **ctx_array)
 	if (force_reclaim_total > 0)
 		printf(" Forced Reclaims[%d]", force_reclaim_total);
 	if (temp_eouldblok_sec > 0)
-		printf(" NAKs[%d]", temp_eouldblok_sec);
+		printf(" NAKs[%d]", naks_Received);
 	if (naks_Received > 0)
-		printf(" EWOULDBLOCKS / Second[%d]", naks_Received);
+		printf(" EWOULDBLOCKS / Second[%d]", temp_eouldblok_sec);
 
 	printf("\n");
 }
@@ -748,6 +748,7 @@ int handle_src_event(lbm_src_t *src, int event, void *ed, void *cd)
 	{
 		lbm_src_event_ume_registration_ex_t *reg = (lbm_src_event_ume_registration_ex_t *)ed;
 		num_of_reg_success++;
+		stats_use_ump = 1;
 		if (opts->verbose) {
 			printf("UME store %u: %s registration success. RegID %u. Flags %x ", reg->store_index, reg->store, reg->registration_id, reg->flags);
 			if (reg->flags & LBM_SRC_EVENT_UME_REGISTRATION_SUCCESS_EX_FLAG_OLD)
@@ -1537,7 +1538,7 @@ int main(int argc, char **argv)
 	/* Put RTT receivers on there own context */
 	if (opts->rtt)
 	{
-		if (lbm_context_create(&ctx[num_ctx], cattr, NULL, NULL) == LBM_FAILURE) {
+		if (lbm_context_create(&ctx[opts->num_ctx], cattr, NULL, NULL) == LBM_FAILURE) {
                         fprintf(stderr, "lbm_context_create: %s\n", lbm_errmsg());
                         exit(1);
                 }
@@ -1582,9 +1583,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "could not allocate source index array\n");
 		exit(1);
 	}
-	if (opts->print_metrics > 0) 
-		if ((source_registration_tv = (struct timeval*)malloc(sizeof(struct timeval)*opts->num_srcs)) == NULL) 
-			fprintf(stderr, "could not allocate registration timer memory array\n");
+	
+	if ((source_registration_tv = (struct timeval*)malloc(sizeof(struct timeval)*opts->num_srcs)) == NULL) 
+		fprintf(stderr, "could not allocate registration timer memory array\n");
 
 	if ((src_flight_size = (int*)malloc(sizeof(int)*opts->num_srcs)) == NULL) {
 		fprintf(stderr, "could not source flight size array\n");
@@ -1653,12 +1654,12 @@ int main(int argc, char **argv)
 			}
 			sprintf(rtopicname, "%s.rtt", topicname);
 	
-			if (lbm_rcv_topic_lookup(&rtopic, ctx[num_ctx], rtopicname, rcv_attr) == LBM_FAILURE) {
+			if (lbm_rcv_topic_lookup(&rtopic, ctx[opts->num_ctx], rtopicname, rcv_attr) == LBM_FAILURE) {
 				fprintf(stderr, "lbm_rcv_topic_lookup: %s\n", lbm_errmsg());
 				exit(1);
 			}
 	
-			if (lbm_rcv_create(&(rcvs[i]), ctx[num_ctx], rtopic, rcv_handle_msg, NULL, opts->eventq ? evq : NULL) == LBM_FAILURE) {
+			if (lbm_rcv_create(&(rcvs[i]), ctx[opts->num_ctx], rtopic, rcv_handle_msg, NULL, opts->eventq ? evq : NULL) == LBM_FAILURE) {
 				fprintf(stderr, "lbm_rcv_create: %s\n", lbm_errmsg());
 				exit(1);
 			}
