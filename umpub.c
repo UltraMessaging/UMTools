@@ -1120,7 +1120,7 @@ void *sending_thread_main(void *arg)
 					++perf_msgs_sent_out;
 			}	
 			else {
-				rc = lbm_src_send(srcs[i], message, options.msglen, (options.block ? 0 : LBM_SRC_NONBLOCK) | LBM_MSG_FLUSH) == LBM_FAILURE;
+				rc = lbm_src_send(srcs[i], message, options.msglen, (options.block ? 0 : LBM_SRC_NONBLOCK) ) == LBM_FAILURE;
 				if (rc) {
 					if (lbm_errnum() == LBM_EWOULDBLOCK) {
 						block_cntr++;
