@@ -157,12 +157,17 @@ int stats_use_ump = 0;
 int stats_use_umq = 0;
 int stats_rtt = 0;
 
+double stab_min_secs = 100.0;
+double stab_max_secs = 0.0;
+double stab_tot_secs = 0.0;
+
 const char Purpose[] = "Purpose: Send rate-controlled messages on multiple topics.";
 const char Usage[] =
 "Usage: %s [options]\n"
 "  Topic names generated as a root, followed by a dot, followed by an integer.\n"
 "  By default, the first topic created will be '29west.example.multi.0'\n"
 "Available options:\n"
+"  -a, --stability           Measure Latency for message stability.\n"
 "  -c, --config=FILE         Use LBM configuration file FILE.\n"
 "                            Multiple config files are allowed.\n"
 "                            Example:  '-c file1.cfg -c file2.cfg'\n"
@@ -197,7 +202,7 @@ const char Usage[] =
 MONOPTS_SENDER
 MONMODULEOPTS_SENDER;
 
-const char * OptionString = "c:C:Dd:hHi:I:f:j:l:L:m:M:np:r:R:s:S:tT:vx:K";
+const char * OptionString = "ac:C:Dd:hHi:I:f:j:l:L:m:M:np:r:R:s:S:tT:vx:K";
 #define OPTION_MONITOR_SRC 0
 #define OPTION_MONITOR_CTX 1
 #define OPTION_MONITOR_TRANSPORT 2
@@ -207,6 +212,7 @@ const char * OptionString = "c:C:Dd:hHi:I:f:j:l:L:m:M:np:r:R:s:S:tT:vx:K";
 #define OPTION_MONITOR_APPID 6
 const struct option OptionTable[] =
 {
+	{ "stability", no_argument, NULL, 'a' },
 	{ "config", required_argument, NULL, 'c' },
 	{ "contexts", required_argument, NULL, 'C' },
 	{ "delay", required_argument, NULL, 'd' },
@@ -279,6 +285,7 @@ struct Options {
 	int rtt;                                 /* Measure RTT if true */
 	int rtt_ignore;                          /* TODO: Ignore this number of messages */
 	int print_metrics;                       /* How often to print advanced metrics (milliseconds)*/
+	int stability;                           /* Measure stability latency */
 };
 
 void print_platform_info()
@@ -662,6 +669,8 @@ int print_perf_stats(lbm_context_t **ctx_array)
 		printf(" NAKs[%d]", naks_Received);
 	if (naks_Received > 0)
 		printf(" EWOULDBLOCKS / Second[%d]", temp_eouldblok_sec);
+	if (options.stability)
+		printf("\n Stability Latency Min/Avg/Max[%.06f/%.06f/%.06f]", stab_min_secs, stab_tot_secs/msgs_stabilized, stab_max_secs);
 
 	printf("\n");
 }
@@ -813,7 +822,28 @@ int handle_src_event(lbm_src_t *src, int event, void *ed, void *cd)
 	case LBM_SRC_EVENT_UME_MESSAGE_STABLE_EX:
 	{
 		int i, semval;
+		struct timeval *stab_latency_tv;
+		struct timeval now;
 		lbm_src_event_ume_ack_ex_info_t *info = (lbm_src_event_ume_ack_ex_info_t *)ed;
+
+		if (opts->stability && info->msg_clientd != NULL)
+		{
+			float time_secs = 0.0;
+			stab_latency_tv = (struct timeval*)info->msg_clientd;
+			current_tv(&now);
+			now.tv_sec -= stab_latency_tv->tv_sec;
+                        now.tv_usec -= stab_latency_tv->tv_usec;
+                        normalize_tv(&now);
+                        time_secs = (double)now.tv_sec + (double)now.tv_usec / 1000000.0;
+			if (time_secs < stab_min_secs)
+				stab_min_secs = time_secs;
+			if (time_secs > stab_max_secs)
+				stab_max_secs = time_secs;
+			stab_tot_secs += time_secs;
+
+			free(stab_latency_tv);
+		}
+
 		msgs_stabilized++;
 		if (opts->verbose) {
 			if (info->flags & LBM_SRC_EVENT_UME_MESSAGE_STABLE_EX_FLAG_STORE) {
@@ -1045,6 +1075,7 @@ void *sending_thread_main(void *arg)
 	/* printf("msgs = %u\n", msgsleft[thrdidx]); */
 	while (msgsleft[thrdidx] > 0 || msgsleft[thrdidx] == MAX_MESSAGES_INFINITE) {
 		for (i = 0; i < options.num_srcs; i++) {
+		struct timeval *stab_latency_tv;
 
 		/* Use some (potentially idle time) to get stats */
 		/* And hopefully not impact performance (much)*/
@@ -1082,6 +1113,15 @@ void *sending_thread_main(void *arg)
 				hfexinfo.hf_sqn.u64 = count;
 			else
 				hfexinfo.hf_sqn.u32 = (lbm_uint32_t)count;
+
+			if (options.stability)
+			{
+				stab_latency_tv = (struct timeval *) malloc(sizeof(struct timeval));
+				current_tv(stab_latency_tv);
+				hfexinfo.ume_msg_clientd = (void*)stab_latency_tv;
+				hfexinfo.flags |= LBM_SRC_SEND_EX_FLAG_UME_CLIENTD;
+			}
+
 			rc = lbm_hf_src_send_ex(srcs[i], message, options.msglen, 0, options.block ? 0 : LBM_SRC_NONBLOCK, &hfexinfo) == LBM_FAILURE;
 			if (rc) {
 				if (lbm_errnum() == LBM_EWOULDBLOCK) {
@@ -1090,6 +1130,9 @@ void *sending_thread_main(void *arg)
 				}
 				else 
 					fprintf(stderr, "lbm_src_send: %s\n", lbm_errmsg());
+
+				if (options.stability)
+                                                free(stab_latency_tv);
 			}
 			else 
 				++perf_msgs_sent_out;
@@ -1098,6 +1141,13 @@ void *sending_thread_main(void *arg)
 			if (options.channel_number >= 0) {
 				lbm_src_send_ex_info_t info;
 				lbm_src_channel_info_t *chn = NULL;
+				if (options.stability)
+                                {
+                                        stab_latency_tv = (struct timeval *) malloc(sizeof(struct timeval));
+                                        current_tv(stab_latency_tv);
+                                        info.ume_msg_clientd = (void*)stab_latency_tv;
+                                        info.flags |= LBM_SRC_SEND_EX_FLAG_UME_CLIENTD;
+                                }
 				printf("Sending on channel %ld\n", options.channel_number); 
 				if (lbm_src_channel_create(&chn, srcs[i], options.channel_number) != 0) {
 					fprintf(stderr, "lbm_src_channel_create: %s\n", lbm_errmsg());
@@ -1115,12 +1165,23 @@ void *sending_thread_main(void *arg)
 					}
 					else 
 						fprintf(stderr, "lbm_src_send: %s\n", lbm_errmsg());
+					if (options.stability)
+                                                free(stab_latency_tv);
 				}
 				else 
 					++perf_msgs_sent_out;
 			}	
 			else {
-				rc = lbm_src_send(srcs[i], message, options.msglen, (options.block ? 0 : LBM_SRC_NONBLOCK) ) == LBM_FAILURE;
+				lbm_src_send_ex_info_t info;
+				if (options.stability)
+				{
+					stab_latency_tv = (struct timeval *) malloc(sizeof(struct timeval));
+					current_tv(stab_latency_tv);
+					info.ume_msg_clientd = (void*)stab_latency_tv;
+					info.flags |= LBM_SRC_SEND_EX_FLAG_UME_CLIENTD;
+				}
+
+				rc = lbm_src_send_ex(srcs[i], message, options.msglen, (options.block ? 0 : LBM_SRC_NONBLOCK) | LBM_MSG_FLUSH, &info) == LBM_FAILURE;
 				if (rc) {
 					if (lbm_errnum() == LBM_EWOULDBLOCK) {
 						block_cntr++;
@@ -1128,6 +1189,9 @@ void *sending_thread_main(void *arg)
 					}
 					else 
 						fprintf(stderr, "lbm_src_send: %s\n", lbm_errmsg());
+
+					if (options.stability)
+						free(stab_latency_tv);
 				}
 				else
 					++perf_msgs_sent_out;
@@ -1202,6 +1266,7 @@ void process_cmdline(int argc, char **argv, struct Options *opts)
 	opts->rtt = 0;
 	opts->rtt_ignore = -1;
 	opts->print_metrics = -1;
+	opts->stability = 0;
 
 	strcpy(opts->topicroot, DEFAULT_TOPIC_ROOT);
 	opts->transport = (lbmmon_transport_func_t *)lbmmon_transport_lbm_module();
@@ -1211,6 +1276,9 @@ void process_cmdline(int argc, char **argv, struct Options *opts)
 	{
 		switch (c)
 		{
+		case 'a':
+			opts->stability++;
+			break;
 		case 'c':
 			/* Initialize configuration parameters from a file. */
 			if (lbm_config(optarg) == LBM_FAILURE) {
