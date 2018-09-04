@@ -1,2 +1,3 @@
 UMTools
-General purpose tools for Ultra Messaging
+
+Special-purpose tools for Ultra Messaging
