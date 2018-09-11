@@ -1,0 +1,36 @@
+<um-configuration version="1.0">
+<templates>
+<template name="defaults">
+  <options type="context">
+    <option default-value="&quot;eth1&quot;"  name="default_interface"/>
+     <option default-value="0" name="request_tcp_bind_request_port"/>
+     <option default-value="0" name="resolver_cache"/>
+  </options>
+</template>
+</templates>
+<applications>
+ <application name="lbmmond_json" template="defaults">
+  <contexts>
+   <context name="umestored">
+    <options type="context">
+     <option default-value="226.19.19.1" name="resolver_multicast_address"/>
+    </options>
+   </context>
+   <context name="tnwgd">
+    <options type="context">
+     <option default-value="226.19.19.1" name="resolver_multicast_address"/>
+    </options>
+   </context>
+  </contexts>
+ </application>
+ <application name="" template="defaults">
+  <contexts>
+  <context>
+  <receivers>
+  </receivers>
+ </context>
+ </contexts>
+ </application>
+</applications>
+</um-configuration>
+

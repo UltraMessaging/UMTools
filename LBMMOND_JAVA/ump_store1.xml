@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - A simple configuration file for a UME store daemon. Store name is store1
+  - Logs are appended to the file ump_store1.log
+  -->
+<ume-store version="1.3">
+ <daemon>
+ <lbm-config>umestored.cfg</lbm-config>
+  <log>ump_store1.log</log>
+  <daemon-monitor topic="store_monitor_topic">
+   <lbm-config> umestored_dmonitor.cfg </lbm-config>
+   <publishing-interval>
+ 	<group name="default" ivl="35"/>
+ 	<group name="config" ivl="45"/>
+   </publishing-interval>
+   <remote-snapshot-request allow="1"/>
+   <remote-config-changes-request allow="1"/>
+ </daemon-monitor>
+</daemon>
+
+<stores>
+ <store name="Example_Store_1" port="14567">
+  <ume-attributes>
+    <option type="store" name="disk-cache-directory" value="."/>
+    <option type="store" name="disk-state-directory" value="."/>
+    <option type="store" name="context-name" value="store1"/>
+    <option type="lbm-context" name="monitor_appid" value="umestored" />
+  </ume-attributes>
+  <topics>
+   <topic pattern="." type="PCRE">
+	<ume-attributes>
+     		<option type="store" name="repository-type" value="memory"/>
+	</ume-attributes>
+   </topic>
+  </topics>
+ </store>
+</stores>
+</ume-store>

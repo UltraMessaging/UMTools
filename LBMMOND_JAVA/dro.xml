@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- G1 xml file- 2 endpoint portals -->
+<tnw-gateway version="1.0">
+<daemon>
+<monitor interval="60">
+</monitor>
+<daemon-monitor topic="drotopic">
+ <lbm-config>tnwgd_dmonitor.cfg</lbm-config>
+ <publishing-interval>
+  <group name="default" ivl="30"/>
+  <group name="gateway-config" ivl="120"/>
+  <group name="portal-config" ivl="120"/>
+ </publishing-interval>
+ <remote-snapshot-request allow="1"/>
+ <remote-config-changes-request allow="1"/>
+</daemon-monitor>
+</daemon>
+<portals>
+<endpoint>
+ <name>MONITORING-TRD1</name>
+ <domain-id>1</domain-id>
+ <lbm-config>TRD1.cfg</lbm-config>
+ <publishing-interval>
+ 	<group name="default" ivl="30"/>
+ 	<group name="gateway-config" ivl="120"/>
+ 	<group name="portal-config" ivl="120"/>
+ </publishing-interval>
+ </endpoint>
+</portals>
+</tnw-gateway>
