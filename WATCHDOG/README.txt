@@ -1,6 +1,6 @@
-This application can be used to dump the transport (XPORT) source string and the original source string from TIRs.
+This application detects the end of a topic stream or gaps in topic resolution packets and has the option of issuing TR requests to restart topic resolution.
 
-It can also flag and execute TR requests based on timeout criteria:
+These are the timeout options for issuing the TR requests:
 1)
 "  -S, --src-tr-timeout=NUM  Execute TR-request if there is no SRC context TR activity after NUM secs\n"
     This options expects a configuration or environment that has sources constantly advertising TIR. 
@@ -15,17 +15,21 @@ It can also flag and execute TR requests based on timeout criteria:
 "  -W, --wrcv-eos='pattern'  Execute TR-request if no heart-beat BOS after 'pattern' EOS + TQR timeout \n"
     This creates a wildcard receiver and behaves similar to the "-R" option. 
 
-4) There is also a "-n" option that prints a warning if there is no response to queries. 
+
+There are options for the flags in the TR request:
+	- adverts, queries, wildcard, ctx-ads, ctx-queries, gw-interest
+All the flags are enabled if there no flags are specified.
+
+There is also a "-n" option that prints a warning if there is no response to queries. 
+
+This application can also be used to dump the transport (XPORT) source string and the original source string from TIRs, with the verbose option of the --src-tr-timeout enabled.
 
 
-This is the help file:
+Help file:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-c:\>lbm_watchdog.exe -h
-[.. ..]
 c:\Program Files\Informatica\UMQ_6.11.1\Win2k-x86_64\bin\NEW>lbm_watchdog.exe -v -S5 -D --rcv-eos=mytopic  -hg
+[.. ..]
         chk: **********INFO! '-D' option disables TR Requests !********
-UMQ 6.11.1 [UMP-6.11.1] [UMQ-6.11.1] [64-bit] Build: Apr 30 2018, 11:34:01 ( DEBUG license LBT-RM LBT-RU LBT-IPC LBT-SMX BROKER ) WC[PCRE 6.7 04-Jul-2006,
-appcb] HRT[QueryPerformanceCounter()]
 Usage: lbm_watchdog.exe [at least one option]
 Available options:
   -c, --config=FILE     Use LBM configuration file FILE.
