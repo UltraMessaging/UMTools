@@ -1,25 +1,68 @@
 /* murmur2_test.c - program to read a set of topic names and display the
  * resulting hash chain counts and lengths for the default UM resolver hash
  * function murmur2.
+ *
  * See https://ultramessaging.github.io/currdoc/doc/Config/grpudpbasedresolveroperation.html#resolverstringhashfunctioncontext
+ *
+ * NOTE: This program was not written to be any kind of general test of the
+ * murmur2 algorithm.  It is intended as a means to calculate and display
+ * the UM resolver hash table chain lengths for a given set of topic names.
+ *
+ * BUILD:
+ *   gcc -o murmur2_test murmur2_test.c
+ * Note that the program is self-contained and does not link with UM.
+ *
+ * USAGE:
+ *   murmur2_test topics.txt
+ * Where topics.txt contains a list of topic names, one per line.
+ *
+ * SAMPLE OUTPUT:
+ *   Reading topics from db_topics.txt...
+ *   Analyzing topics...
+ *   Hash results...
+ *   ---Topic TOTAL: 1903 Hash Size: 131111 (in bytes: 524444)
+ *   ---Hash 1 results: 1865
+ *   ---Hash 2 results: 19
+ *   ---Hash 3 results: 0
+ *   ---Hash 4 results: 0
+ *   ---Hash 5 results: 0
+ *   ---Hash 6 results: 0
+ *   ---Hash 7 results: 0
+ *   ---Hash 8 results: 0
+ *   ---Hash 9 results: 0
+ *   ---Hash greater than 9 results: 0
+ * Where "Hash 1 results: 1865" means that of the 1903 input topic names,
+ * 1865 hash buckets had no collisions (chain length 1).  Only 19 buckets
+ * had chain lengths of 2 (i.e. 2 topic names hashed to the bucket).
+ * So 1865*1 + 19*2 = 1903 topics.
  */
+
+/* On 5-Apr-2019, the following comment block was extracted from:
+ * https://github.com/aappleby/smhasher/blob/master/src/MurmurHash2.cpp
+ * --------------------------------------------------------------------
+ * MurmurHash2 was written by Austin Appleby, and is placed in the public
+ * domain. The author hereby disclaims copyright to this source code.
+ *
+ * Note - This code makes a few assumptions about how your machine behaves -
+ *
+ * 1. We can read a 4-byte value from any address without crashing
+ * 2. sizeof(int) == 4
+ *
+ * And it has a few limitations -
+ *
+ * 1. It will not work incrementally.
+ * 2. It will not produce the same results on little-endian and big-endian
+ *    machines.
+ */
+
+/*
+ * The murmur2 code contained herein has been slightly changed from the
+ * original (e.g. seed is a hard-coded constant).
+ */
+
 #include <stdio.h>
 #include <string.h>
 
-/*-----------------------------------------------------------------------------
-   MurmurHash2, by Austin Appleby
-
-   Note - This code makes a few assumptions about how your machine behaves -
-
-   1. We can read a 4-byte value from any address without crashing
-   2. sizeof(int) == 4
-
-   And it has a few limitations -
-
-   1. It will not work incrementally.
-   2. It will not produce the same results on little-endian and big-endian
-      machines.
-*/
 unsigned long hash_topic_sym_murmur2(const char * key, size_t len)
 {
 	/* 'm' and 'r' are mixing constants generated offline.
@@ -76,7 +119,7 @@ unsigned long hash_topic_sym_murmur2(const char * key, size_t len)
 }
 
 /* Some convenient prime numbers */
-/* 131111 LBM's default hash table size */
+/* 131111 UM's default hash table size */
 /* 311111 */
 /* 611111 */
 /* 588631 */
