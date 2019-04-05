@@ -12,4 +12,7 @@ FILES:
 			-> Also includes lbmmond_cmd which uses the LBMContext.send() API to send requests for statistics to the umestored and tnwgd daemons.
 5. TRSNIFFER(c)		-> Utility for parsing Topic Resolution streams 
 6. WATCHDOG(c)		-> Checks for absence of TR packets or a topic stream and has the option of issuing TR requests to restart topic resolution.
-
+7. murmur2_test.c	-> Reads a set of topic names and gives the number and
+lengths of the resulting hash chains using UM's default
+[resolver hash function](https://ultramessaging.github.io/currdoc/doc/Config/grpudpbasedresolveroperation.html#resolverstringhashfunctioncontext)
+"murmur2".
