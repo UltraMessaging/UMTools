@@ -443,13 +443,13 @@ jint ump_dmon_msg_handler(JNIEnv *env, const char *msg_buffer, jlong msg_size, j
 			lbm_snprintf(UMP_JSON_buffer, ArrayLength,"\"LBM_UMESTORE_DMON_MPG_DISK_STATS\":{"
                                  "\"version\":%d,"
                                  "\"time_buff_sent\":\"%s\","
-                                 "\"store_idx\":\"0x%04X\""
-                                 "\"dmon_topic_idx\":\"0x%08X\""
-                                 "\"regid\":\"0x%08X\""
-                                 "\"max_offset\":\"0x%016"PRIx64"\""
-                                 "\"num_ios_pending\":\"0x%016"PRIx64"\""
-                                 "\"num_read_ios_pending\":\"0x%016"PRIx64"\""
-                                 "\"offset\":\"0x%016"PRIx64"\""
+                                 "\"store_idx\":\"0x%04X\","
+                                 "\"dmon_topic_idx\":\"0x%08X\","
+                                 "\"regid\":\"0x%08X\","
+                                 "\"max_offset\":\"0x%016"PRIx64"\","
+                                 "\"num_ios_pending\":\"0x%016"PRIx64"\","
+                                 "\"num_read_ios_pending\":\"0x%016"PRIx64"\","
+                                 "\"offset\":\"0x%016"PRIx64"\","
                                  "\"start_offset\":\"0x%016"PRIx64"\"}",
                                  
 				msg_version, time_buff_sent,
