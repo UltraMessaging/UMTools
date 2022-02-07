@@ -468,7 +468,7 @@ int lbm_transport_source_format(const lbm_transport_source_info_t *info, size_t 
 			break;
 	}
 	if (strlen(buf) >= *size) {
-		printf("\n ERROR! String buffer size not large enough strlen(buf)[%i] > *size[%i]", strlen(buf), *size);
+		printf("\n ERROR! String buffer size not large enough strlen(buf)[%i] > *size[%i]", (int)strlen(buf), (int)*size);
 		*size = strlen(buf) + 1;
 		return 4;
 	}

@@ -67,6 +67,9 @@ void clear_string_list(struct strings_list_head *TS_strings_list_ptr);
 void TS_printf(uint32_t log_level, const char *format, ...);
 void TS_fprintf(uint32_t log_level, const char *format, va_list ptr);
 
+int lbm_otid_to_transport_source(const uint8_t *otid, lbm_transport_source_info_t *info, uint32_t infosize);
+int lbm_transport_source_format(const lbm_transport_source_info_t *info, size_t infosize, char *source, size_t *size);
+
 #define TS_DATESTR_SZ 64
 void TS_tv2str(struct timeval *tv, char *buf);
 

@@ -659,7 +659,7 @@ struct lbm_lbmr_options_t_stct {
 #define LBM_TRANSPORT_DAEMON 0xFF
 
 
-#define MUL_FATAL_ASSERT(exp) ((exp)?(void )0:printf("failed assertion [%s] at line %d in %s\n ", #exp,__FILE__,__LINE__))
+#define MUL_FATAL_ASSERT(exp) ((exp)?(void )0:printf("failed assertion [%s] at line %d in %s\n ", #exp,__LINE__,__FILE__))
 
 
 #endif

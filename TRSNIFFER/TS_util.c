@@ -18,7 +18,7 @@
  *
  */
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include "TS_util.h"
@@ -186,8 +186,7 @@ char strings_list_store (char * string,  char * opt_string2, struct strings_list
                 STRINGS_MUTEX_UNLOCK_RETURN(2);
         }/* End forward direction */
 
-
-        if (search_forward == 0){
+        else {  /* search_forward == 0 */
                 while (iter) {
 			ctr++; 
                         strcmp_res = strcmp(iter->string, new->string);
@@ -314,6 +313,6 @@ void TS_tv2str(struct timeval *tv, char *buf){
 	nowtime = tv->tv_sec;
         nowtm = localtime(&nowtime);
         strftime(tmbuf, TS_DATESTR_SZ, "%Y-%m-%d/%H.%M/%S", nowtm);
-        snprintf(buf, TS_DATESTR_SZ, "%s.%06d", tmbuf, tv->tv_usec);
+        snprintf(buf, TS_DATESTR_SZ, "%s.%06d", tmbuf, (int)tv->tv_usec);
 }
 

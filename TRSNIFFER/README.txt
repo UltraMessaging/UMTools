@@ -35,6 +35,12 @@
 	v 0.4.2 : 
 		- Skip through contiguous 802.1q ethernet extended header
 		- NCFs look like poison TMRs; added a limiter
+	v 0.5 : 
+		- Added '-f' flag to change 'LBMR packet found' logs to log level PRINT_LBMR (most default to PRINT_STAT).
+		  Thus, supplying "-f -l 0x7" prints periodic stats without printing any per-packet logs.
+		  Omitting "-f" leaves TRsniffer in its previous behaviour.
+		- Compiled with -Wall and got rid of all the warnings.
+		- Corrected 3 minor bugs.
 
 
  -   Known issues:
