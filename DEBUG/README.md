@@ -87,5 +87,6 @@ $ head -1 raw_debug_log.txt
 [23796:1616492480|0518.345396]:[lbm_version]
 
 $ ./dbg_timestamp.pl -H 9 raw_debug_log.txt >processed_debug_log.txt
+$ head -1 processed_debug_log.txt
 [23796:1616492480|09:08:38.345396]:[lbm_version]
 ````
