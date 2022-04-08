@@ -16,4 +16,5 @@ FILES:
 lengths of the resulting hash chains using UM's default
 [resolver hash function](https://ultramessaging.github.io/currdoc/doc/Config/grpudpbasedresolveroperation.html#resolverstringhashfunctioncontext)
 "murmur2".
-8. mtools		-> multicast tools (without UM) to test connectivity and throughput of networks and hosts.
+
+The mtools tool set has moved to: https://github.com/UltraMessaging/mtools
