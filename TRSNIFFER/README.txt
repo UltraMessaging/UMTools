@@ -4,7 +4,7 @@
 
 	Build Example :
 	----------------
-	gcc -g -lpthread  -lm  -o TRsniffer TRsniffer.c  lbmotid.c TS_util.c
+	gcc -g -pthread  -lm  -o TRsniffer TRsniffer.c  lbmotid.c TS_util.c
 
  	Command lines examples:
 	---------------------
