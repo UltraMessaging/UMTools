@@ -708,7 +708,8 @@ DecodeLbmrPacket(uint8_t *pktData, struct sockaddr_in *fromaddr, int recvSize, s
 				snprintf(source_name,LBM_MSG_MAX_SOURCE_LEN-1, "%s[%i]:%i.%i.%i.%i:%i",tname,msg_domain_id,((cnt >> 24) & 0xFF), ((cnt >> 16) & 0xFF), ((cnt >> 8) & 0xFF), ((cnt) & 0xFF),ntohs(fromaddr->sin_port));
 				TS_stats_WTQR(source_name, strcat(options_str,str2_ptr), tv, TS_save_all_entries);
 			}
-			slen = strlen(tname) + 1;
+			/* substract off the 10 characters for "WC_PATTERN:" added to topic pattern */
+			slen = (strlen(tname) + 1) - 10;
 			bytes_to_parse -= slen;
 			ptr += slen;
 		}
