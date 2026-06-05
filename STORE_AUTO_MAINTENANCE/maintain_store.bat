@@ -33,11 +33,11 @@ REM ---------------------------------------------------------------
 REM Parse named options
 REM
 REM NOTE: "if cond ( ... & goto :label )" with goto inside a
-REM parenthesized block is unreliable in cmd.exe — the goto can
+REM parenthesized block is unreliable in cmd.exe â€” the goto can
 REM fail to exit the block cleanly.  The safe pattern is a bare
 REM "if cond goto :opt_x" with set/shift AFTER the label, outside
 REM any conditional block.  Also: "if cond set ... & shift & goto"
-REM WITHOUT parens is wrong too — the & makes shift and goto run
+REM WITHOUT parens is wrong too â€” the & makes shift and goto run
 REM unconditionally regardless of the if result.
 REM ---------------------------------------------------------------
 :parse_loop
@@ -124,7 +124,7 @@ REM ---------------------------------------------------------------
 REM Process each store via subroutine call.
 REM
 REM NOTE: Labels inside a for-loop body (between the outer parens)
-REM are invisible to goto — goto :next_store_%%i would fail because
+REM are invisible to goto â€” goto :next_store_%%i would fail because
 REM the label is registered literally as ":next_store_%%i" but the
 REM goto looks for ":next_store_1" at runtime.  Calling a subroutine
 REM instead lets us use  goto :eof  to skip the remaining steps for
@@ -174,11 +174,11 @@ REM Step 1: Cleanup zero-message state and cache files
 call :log_msg "  Step 1: Cleaning zero-message files..."
 "%UMESNAPREPO%" -s "!SDIR!" !CACHE_ARGS! -d "!STORE_BACKUP!" -m0 > "!TS_TMP!" 2>&1
 if errorlevel 1 (
-    REM "no state files found" means empty store — not an error, skip it
+    REM "no state files found" means empty store â€” not an error, skip it
     findstr /i /c:"no state files found" "!TS_TMP!" >nul 2>&1
     if not errorlevel 1 (
         call :ts_print "!TS_TMP!"
-        call :log_msg "  [WARN] No state files found for store !SNAME! — nothing to do, skipping."
+        call :log_msg "  [WARN] No state files found for store !SNAME! â€” nothing to do, skipping."
         goto :eof
     )
     call :ts_print "!TS_TMP!"
@@ -198,7 +198,7 @@ if errorlevel 1 (
 )
 
 REM Step 3: Prune messages older than current Unix timestamp
-REM Get-Date -UFormat %%s is buggy on PowerShell 5.x — it uses local time
+REM Get-Date -UFormat %%s is buggy on PowerShell 5.x â€” it uses local time
 REM components as if they were UTC, giving a timestamp offset by the UTC bias.
 REM [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() is unambiguously UTC.
 for /f %%t in ('powershell -NoProfile -Command "[int][DateTimeOffset]::UtcNow.ToUnixTimeSeconds()"') do set PRUNE_TS=%%t
@@ -277,7 +277,7 @@ REM ---------------------------------------------------------------
 :ts_print
 set "TS_FILE=%~1"
 if not exist "%TS_FILE%" goto :eof
-REM Fetch timestamp once for the whole file — avoids a PowerShell
+REM Fetch timestamp once for the whole file â€” avoids a PowerShell
 REM launch per output line (each launch costs ~200-500ms on Windows).
 if "%UTC_TIMESTAMPS%"=="1" (
     for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "(Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm:ss') + ' UTC'"`) do set TS2=%%I

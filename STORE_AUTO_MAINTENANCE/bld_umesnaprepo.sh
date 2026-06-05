@@ -15,6 +15,7 @@ gcc umesnaprepo.c -o umesnaprepo \
     -I"$UMP_DIR/include/lbm" \
     -I. \
     -L"$UMP_DIR/lib" \
+    -Wl,--as-needed \
     -lumestorelib -llbm -llbmsdm -llbmutl -lrsock \
     -lqpid-proton -lstdc++ -lpthread -lcrypto -lssl \
     -lrt -lm -ldl -lsmartheap_smp64 -lprotobuf-c \

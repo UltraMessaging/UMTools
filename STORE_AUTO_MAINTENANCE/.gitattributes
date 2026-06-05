@@ -1,0 +1,7 @@
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sh  text eol=lf
+*.c   text
+*.h   text
+*.md  text
+Makefile text eol=lf

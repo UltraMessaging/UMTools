@@ -124,6 +124,29 @@ link.exe /OUT:umesnaprepo.exe ws2_32.lib /NOLOGO /INCREMENTAL:no /LTCG /DEBUG ^
 - Linux: `gcc`, standard C library (no external library dependencies)
 - Windows: Visual Studio or MinGW
 
+### Runtime dependencies for the prebuilt `umesnaprepo`
+
+The shipped `umesnaprepo` is dynamically linked against UMP shared objects/DLLs.
+You must point the dynamic loader at your UMP install before running it (or
+having `store_auto_maint` invoke it):
+
+- **Linux:**
+  ```bash
+  export LD_LIBRARY_PATH=/path/to/UMP_<ver>/Linux-glibc-2.17-x86_64/lib
+  ```
+- **Windows:**
+  ```
+  set PATH=C:\path\to\UMQ_<ver>\Win2k-x86_64\bin;%PATH%
+  ```
+
+The umestored binaries shipped with UMP normally take care of this for you when
+they are installed via the standard environment-setup script (e.g.
+`source umq_setup.sh`). If you launch `store_auto_maint` from that same shell,
+both `umestored` and `umesnaprepo` resolve their libraries correctly.
+
+`store_auto_maint` itself is statically linked against libc/pthread only and has
+no UMP runtime dependency.
+
 ## Building
 
 ### Linux
@@ -185,6 +208,36 @@ cl /O2 /W3 store_auto_maint.c xml_config_parser.c /Fe:store_auto_maint.exe
   ```
 
 All stores with a `disk-state-directory` are included in the maintenance cycle by default.
+
+### Configure source-state-lifetime — required for prune to do anything
+
+> **Gotcha:** if your sources don't tell the store to retain their state past
+> disconnect, the store deletes per-source state files within ~30 seconds of the
+> source going away. By the time the next maintenance cycle fires, the cache and
+> state directories may already be empty — `maintain_store.sh` correctly reports
+> "no state files found, skipping" and exits successfully, but **nothing is
+> actually pruned**. The cycle's `completed=1` stat is misleading in this case.
+>
+> To make persisted state survive across the cycle and across source restarts,
+> set a long lifetime on **both** sides:
+>
+> Source-side (in the LBM config file used by your application):
+> ```
+> source ume_state_lifetime 3600000   # 1 hour, in milliseconds
+> ```
+>
+> Store-side (in the `<topic>` block of `umestored`'s XML config):
+> ```xml
+> <topic pattern=".*" type="PCRE">
+>   <ume-attributes>
+>     <option type="store" name="repository-type" value="disk"/>
+>     <option type="store" name="source-state-lifetime" value="3600000"/>
+>   </ume-attributes>
+> </topic>
+> ```
+>
+> Choose a value comfortably longer than your maintenance interval and the
+> longest expected source-side outage.
 
 ## Usage
 
@@ -496,7 +549,7 @@ Exit codes:
 ## File Layout
 
 ```
-STORE_AUTO_MAINTENANCE/
+store_auto_maintenance/
   store_auto_maint.c         Main parent process
   xml_config_parser.c        XML config parser (implementation)
   xml_config_parser.h        XML config parser (header)

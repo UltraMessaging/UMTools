@@ -45,10 +45,13 @@
 #include <ctype.h>
 #include "xml_config_parser.h"
 
-/* Read entire file into a malloc'd buffer. Caller must free. */
+/* Read entire file into a malloc'd buffer. Caller must free.
+ * Open in binary mode so the byte count from ftell() matches what fread()
+ * returns. On Windows, text mode translates CRLF -> LF and the counts diverge,
+ * causing a false-positive "Failed to read" error. */
 static char *read_file(const char *path, long *out_len)
 {
-	FILE *fp = fopen(path, "r");
+	FILE *fp = fopen(path, "rb");
 	char *buf;
 	long len;
 
