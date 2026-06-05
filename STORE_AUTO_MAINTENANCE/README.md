@@ -147,6 +147,30 @@ both `umestored` and `umesnaprepo` resolve their libraries correctly.
 `store_auto_maint` itself is statically linked against libc/pthread only and has
 no UMP runtime dependency.
 
+### Smoke test
+
+The package ships a self-test script that downloads the latest published tree,
+checks the prebuilt binaries, builds from source, and (optionally) runs an
+end-to-end maintenance cycle. Useful for validating a release on a new host
+before you commit to it.
+
+**Linux:**
+```bash
+./smoke_test.sh --quick   # ~30s, no umestored required
+./smoke_test.sh --full    # ~90s, runs a real maintenance cycle (needs umestored + license)
+./smoke_test.sh --local   # test the tree in cwd instead of downloading
+```
+
+**Windows (PowerShell):**
+```powershell
+.\smoke_test.ps1 -Quick
+.\smoke_test.ps1 -Full
+.\smoke_test.ps1 -Local
+```
+
+The scripts auto-detect `UMP_DIR`/`UMQ_DIR` and `LBM_LICENSE_FILENAME` if you
+have a standard install; override via env vars to skip auto-detection.
+
 ## Building
 
 ### Linux

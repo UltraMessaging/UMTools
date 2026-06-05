@@ -1,0 +1,28 @@
+# Build artifacts
+*.o
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# OS / editor leftovers
+.DS_Store
+*~
+*.swp
+*.bak
+*.orig
+
+# Local test sandboxes (keep clean for review)
+UMDIR/
+store_maint.log
+umestored.log
+umestored.pid
+umestored_managed.pid
+umestored.stdout
+umestored.stderr
+
+# Build-output trees (created by make / bld_umesnaprepo.*)
+# but DO ship the curated bin/ subdir
+bin/build/
+*.tmp.bin
