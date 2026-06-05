@@ -1,0 +1,69 @@
+Build environment for the prebuilt binaries in bin/
+====================================================
+
+These binaries WILL ONLY WORK against an umestored built from the same UMP
+version. State files written by a different UMP version will be rejected with
+"corrupt repository, status -15". See README.md for details.
+
+
+bin/Linux-glibc-2.17-x86_64/
+----------------------------
+  Host:        WSL Ubuntu 24, kernel 6.6 (microsoft-standard-WSL2)
+  Compiler:    gcc 13.2.0
+  Linked SDK:  UMP 6.17.0.4 (UMP_6.17.0.4/Linux-glibc-2.17-x86_64) for store_auto_maint;
+               UMQ 6.17.1   (locally rebuilt from Perforce, libumestorelib.a) for umesnaprepo
+  Build flags: -D_FILE_OFFSET_BITS=64 -O3 -g -no-pie
+  Static linking: libumestorelib.a is statically linked into umesnaprepo, so the
+                  binary does not require LD_LIBRARY_PATH at runtime.
+
+  Verified target: Linux glibc >= 2.17 on x86_64. Should run on RHEL 7+, Ubuntu 18.04+,
+  and equivalent.
+
+
+bin/Win2k-x86_64/
+-----------------
+  Host:        Windows 11 Enterprise, build 26100
+  Compiler:    MSVC 19.50.35730 (Visual Studio 2026 BuildTools 18, cl.exe x64)
+  Linked SDK:  UMQ 6.17.1 (locally rebuilt from Perforce,
+                            pp/UMQ_6.17.1/Win2k-x86_64/lib/{lbm,umestore}.lib)
+  Build flags: /O2 /W3 /Z7 /GL (per bld_umesnaprepo.bat)
+  Runtime:     umesnaprepo.exe requires lbm.dll, umestore.dll, qpid-proton.dll,
+               and other UMP runtime DLLs from your UMP/UMQ install on PATH.
+               store_auto_maint.exe is statically linked and has no UMP dependency.
+
+  Verified target: Windows 10 / Server 2019 and later, x64. Earlier Windows
+  versions are untested.
+
+
+How to confirm version compatibility
+------------------------------------
+Run `umesnaprepo -s STATE_DIR -c CACHE_DIR -l` against your live store. If the
+output starts with:
+
+    [INFO]: Examining repository at index: 0
+    state_filename: ...
+    cache_filename: ...
+    repo_status: 1
+    ume_stored_version: <X.Y.Z.W>
+
+then you have a match. If you see:
+
+    Error: called lbm_srp_get_repo_state() on corrupt repository at index [0];
+           status [-15] info [0] state file name [...]
+
+then the binary's UMP/LBM version does not match what wrote the state files.
+Rebuild from source against the matching UMP version (see README.md "Building
+umesnaprepo" section) and retry.
+
+
+Rebuild quick reference
+-----------------------
+Linux:
+    export UMP_DIR=/path/to/UMP_<version>/Linux-glibc-2.17-x86_64
+    ./bld_umesnaprepo.sh
+    make
+
+Windows (cmd.exe under VS x64 Native Tools prompt):
+    set UMQ=C:\path\to\UMQ_<version>\Win2k-x86_64
+    bld_umesnaprepo.bat
+    cl /O2 /W3 store_auto_maint.c xml_config_parser.c /Fe:store_auto_maint.exe

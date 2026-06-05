@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<ume-store version="1.3">
+  <daemon>
+    <log>umestored.log</log>
+    <pidfile>umestored.pid</pidfile>
+    <lbm-config>lbm_store.cfg</lbm-config>
+    <web-monitor>*:15404</web-monitor>
+  </daemon>
+  <stores>
+    <store name="store0" port="14444" interface="127.0.0.1" >
+      <ume-attributes>
+        <option type="store" name="disk-cache-directory" value="./test/store0/cache"/>
+        <option type="store" name="disk-state-directory" value="./test/store0/state"/>
+        <option type="store" name="context-name" value="store0ctx"/>
+      </ume-attributes>
+      <topics>
+        <topic pattern=".*" type="PCRE">
+          <ume-attributes>
+            <option type="store" name="repository-type" value="disk"/>
+          </ume-attributes>
+        </topic>
+      </topics>
+    </store>
+    <store name="store1" port="14668">
+      <ume-attributes>
+        <option type="store" name="disk-cache-directory" value="./data/store1/cache"/>
+        <option type="store" name="disk-state-directory" value="./data/store1/state"/>
+        <option type="store" name="context-name" value="store1ctx"/>
+      </ume-attributes>
+      <topics>
+        <topic pattern="ABC.*" type="PCRE">
+          <ume-attributes>
+            <option type="store" name="repository-type" value="disk"/>
+          </ume-attributes>
+        </topic>
+      </topics>
+    </store>
+  </stores>
+</ume-store>
+
